@@ -1,0 +1,538 @@
+---
+title: Glossary
+description: Comprehensive glossary of key terms from Designing Data-Intensive Applications
+---
+
+This glossary contains essential terms and concepts from all chapters of Designing Data-Intensive Applications. Terms are organized alphabetically with clear definitions and chapter references.
+
+<AccordionGroup>
+
+<Accordion title="ACID">
+**Atomicity, Consistency, Isolation, Durability** - Four properties that guarantee database transactions are processed reliably. Atomicity ensures all-or-nothing execution, Consistency maintains data integrity, Isolation prevents concurrent transaction interference, and Durability ensures committed data persists.
+
+**Chapter**: 7 - Transactions
+</Accordion>
+
+<Accordion title="Aggregation pipeline">
+A sequence of data processing stages in document databases (like MongoDB) where each stage transforms the data. More declarative than MapReduce while providing similar functionality for complex queries.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Anti-entropy process">
+A background process in leaderless replication that continuously looks for differences between replicas and copies missing data. Runs without particular order and may have significant lag.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Asynchronous replication">
+Replication where the leader sends changes to followers but doesn't wait for confirmation before acknowledging writes to clients. Provides better performance but risks data loss if the leader fails.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Atomicity">
+A transaction property ensuring operations are all-or-nothing - either all changes commit successfully or none do. Failed transactions are rolled back completely.
+
+**Chapter**: 7 - Transactions
+</Accordion>
+
+<Accordion title="Availability">
+The ability of a system to remain operational and respond to requests even when some components fail. Often traded against consistency in distributed systems (CAP theorem).
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Avro">
+A binary encoding format with schema evolution support. Unlike Thrift/Protocol Buffers, uses writer's schema and reader's schema together for decoding, allowing more flexible schema evolution.
+
+**Chapter**: 4 - Encoding and Evolution
+</Accordion>
+
+<Accordion title="Backward compatibility">
+The ability of new code to read data written by old code. Essential for rolling deployments where old and new versions coexist.
+
+**Chapter**: 4 - Encoding and Evolution
+</Accordion>
+
+<Accordion title="Batch processing">
+Processing large amounts of data in a single job that runs periodically. Measured by throughput rather than response time. Examples: MapReduce, Apache Spark.
+
+**Chapter**: 10 - Batch Processing
+</Accordion>
+
+<Accordion title="Bloom filter">
+A space-efficient probabilistic data structure used to test set membership. Can definitively say an element is NOT in a set, or that it MIGHT be (with small false positive rate). Used in LSM-trees to avoid reading SSTables unnecessarily.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="B-tree">
+The most common indexing structure in databases. Self-balancing tree data structure that maintains sorted data and allows searches, insertions, and deletions in logarithmic time. Updates data in place with fixed-size pages.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="CAP theorem">
+States that in the presence of network partitions, a distributed system must choose between Consistency (linearizability) and Availability. In practice, most systems choose availability and eventual consistency.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Causality">
+The happens-before relationship between events. If event A causes event B, then A must be processed before B. Maintaining causal order is weaker than linearizability but important for correctness.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Change data capture (CDC)">
+The process of observing changes written to a database and replicating them to other systems. Enables keeping derived data systems (caches, search indexes) up-to-date.
+
+**Chapter**: 11 - Stream Processing
+</Accordion>
+
+<Accordion title="Column-oriented storage">
+Storage format where values from the same column are stored together, rather than rows. Excellent for analytics workloads that scan many rows but few columns. Enables better compression and vectorized processing.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Compaction">
+The process of combining multiple smaller files or log segments into larger files, removing deleted and overwritten values. Keeps disk usage under control in log-structured storage.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Consensus">
+Agreement among distributed nodes on a single value or course of action. Fundamental problem in distributed systems. Algorithms: Paxos, Raft, ZAB.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Consistent hashing">
+A partitioning scheme that minimizes data movement when nodes are added or removed. Keys and nodes are placed on a hash ring, with each key belonging to the next node clockwise.
+
+**Chapter**: 6 - Partitioning
+</Accordion>
+
+<Accordion title="Consistent prefix reads">
+Guarantee that if a sequence of writes happens in a certain order, anyone reading those writes will see them in the same order. Prevents causality violations like seeing an answer before a question.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="CQRS (Command Query Responsibility Segregation)">
+Pattern that separates read and write operations into different models. Commands update state (write model), queries read from optimized read models derived from events.
+
+**Chapter**: 12 - The Future of Data Systems
+</Accordion>
+
+<Accordion title="Cypher">
+Declarative query language for graph databases (Neo4j). Makes it easy to express graph traversal patterns and relationship queries.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Data cube">
+A grid of aggregates grouped by different dimensions. Special kind of materialized view that enables extremely fast analytical queries but is less flexible.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Data warehouse">
+A separate database optimized for analytics (OLAP). Data is extracted from OLTP systems via ETL, transformed into analytics-friendly schema (often star schema).
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Declarative query">
+Query that specifies what result is desired, not how to achieve it. Allows database to choose optimal execution plan. Examples: SQL, CSS. Contrast with imperative.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Derived data">
+Data that can be recreated from another source (system of record). Examples: caches, denormalized data, indexes. Can be rebuilt if lost.
+
+**Chapter**: 12 - The Future of Data Systems
+</Accordion>
+
+<Accordion title="Document database">
+Database that stores data as self-contained documents (usually JSON). Schema-flexible, good for hierarchical data. Examples: MongoDB, CouchDB.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Durability">
+The guarantee that once a transaction commits, its changes persist even if hardware fails or database crashes. Typically achieved with write-ahead logs and replication.
+
+**Chapter**: 7 - Transactions
+</Accordion>
+
+<Accordion title="Eventual consistency">
+Weak consistency guarantee where replicas may temporarily diverge but eventually converge to the same value if no new updates arrive. Trades consistency for availability and performance.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Event sourcing">
+Storing all changes as an immutable sequence of events rather than mutable current state. Enables audit trail, time travel, and debugging. Current state derived by replaying events.
+
+**Chapter**: 11 - Stream Processing
+</Accordion>
+
+<Accordion title="Failover">
+Process of automatically promoting a follower to leader when the leader fails. Challenging due to potential data loss, split-brain scenarios, and choosing the right timeout.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Forward compatibility">
+The ability of old code to read data written by new code. Harder to achieve than backward compatibility but necessary for rolling deployments.
+
+**Chapter**: 4 - Encoding and Evolution
+</Accordion>
+
+<Accordion title="Graph database">
+Database optimized for data with many relationships. Stores nodes (entities) and edges (relationships). Excellent for traversing connections. Examples: Neo4j, Amazon Neptune.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Hash index">
+Index that uses a hash table in memory to map keys to byte offsets in a data file. Very fast lookups but doesn't support range queries.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="HDFS (Hadoop Distributed File System)">
+Distributed filesystem designed for storing large files across many machines. Provides fault tolerance through replication and enables data locality for MapReduce jobs.
+
+**Chapter**: 10 - Batch Processing
+</Accordion>
+
+<Accordion title="Hot spot">
+A partition or node that receives disproportionately high load compared to others. Causes uneven distribution and performance problems. Example: celebrity user problem.
+
+**Chapter**: 6 - Partitioning
+</Accordion>
+
+<Accordion title="Idempotence">
+Property where performing an operation multiple times has the same effect as performing it once. Critical for safe retries in distributed systems.
+
+**Chapter**: 11 - Stream Processing
+</Accordion>
+
+<Accordion title="Imperative query">
+Query that specifies step-by-step how to achieve a result. Gives explicit control but harder to optimize. Contrast with declarative.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Isolation">
+Transaction property ensuring concurrent transactions don't interfere with each other. Different isolation levels (read committed, repeatable read, serializable) offer different guarantees.
+
+**Chapter**: 7 - Transactions
+</Accordion>
+
+<Accordion title="Join">
+Combining data from multiple tables or collections based on a related field. In distributed systems, challenging due to data partitioning. Types: broadcast join, partitioned join.
+
+**Chapter**: 10 - Batch Processing
+</Accordion>
+
+<Accordion title="Kafka">
+Log-based message broker for event streaming. Provides high throughput, message retention, and partitioning. Core component of many streaming architectures.
+
+**Chapter**: 11 - Stream Processing
+</Accordion>
+
+<Accordion title="Lambda architecture">
+Data processing architecture with separate batch and stream processing layers. Batch layer provides accurate complete views, speed layer provides low-latency approximate views.
+
+**Chapter**: 12 - The Future of Data Systems
+</Accordion>
+
+<Accordion title="Leader-based replication">
+Replication scheme where one node (leader) accepts writes and propagates changes to followers. Most common replication approach. Also called master-slave or active-passive.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Leaderless replication">
+Replication where clients send writes to multiple replicas directly, with no leader. Uses quorums for consistency. Examples: Dynamo, Cassandra, Riak.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Linearizability">
+Strongest consistency guarantee. Makes a system appear as if there's only one copy of data and all operations happen atomically at a single point in time. Also called strong consistency.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Log-structured storage">
+Storage approach that only appends to files, never updates in place. Examples: LSM-trees, SSTables. Enables high write throughput.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Lost update">
+Concurrency problem where two transactions read the same value, modify it, and write it back, with one overwriting the other's changes.
+
+**Chapter**: 7 - Transactions
+</Accordion>
+
+<Accordion title="LSM-tree (Log-Structured Merge-tree)">
+Storage structure that maintains multiple sorted files (SSTables) and periodically merges them. Optimized for write-heavy workloads. Used by Cassandra, LevelDB, RocksDB.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Maintainability">
+How easy it is for others to work on the system over time. Comprises operability (keeping system running), simplicity (managing complexity), and evolvability (adapting to change).
+
+**Chapter**: 1 - Reliable, Scalable, and Maintainable Applications
+</Accordion>
+
+<Accordion title="MapReduce">
+Programming model for batch processing large datasets in parallel across many machines. Consists of map phase (process records, emit key-value pairs) and reduce phase (aggregate values per key).
+
+**Chapter**: 10 - Batch Processing
+</Accordion>
+
+<Accordion title="Materialized view">
+A cached query result that's stored and maintained up-to-date as underlying data changes. Faster to read than recomputing but requires updates on writes.
+
+**Chapter**: 3 - Storage and Retrieval, 11 - Stream Processing
+</Accordion>
+
+<Accordion title="Monotonic reads">
+Guarantee that if a user reads data at one point in time, subsequent reads won't see older data. Prevents time from moving backward for that user.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Multi-leader replication">
+Replication with multiple nodes accepting writes. Each leader replicates changes to other leaders. Good for multi-datacenter setups but requires conflict resolution.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Network partition">
+Situation where network failure splits nodes into groups that can't communicate. Forces choice between consistency and availability (CAP theorem).
+
+**Chapter**: 8 - The Trouble with Distributed Systems
+</Accordion>
+
+<Accordion title="OLAP (Online Analytical Processing)">
+Workload pattern optimized for analytics: large scans, aggregations, complex queries on historical data. Column-oriented storage is ideal.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="OLTP (Online Transaction Processing)">
+Workload pattern optimized for transactions: small queries, random access by key, real-time user interactions. Row-oriented storage is typical.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Partial failure">
+Situation in distributed systems where some components fail while others continue working. Makes distributed systems fundamentally different from single-machine systems.
+
+**Chapter**: 8 - The Trouble with Distributed Systems
+</Accordion>
+
+<Accordion title="Partition (Shard)">
+A subset of data in a distributed database. Enables horizontal scaling by distributing data across multiple machines. Also called shard, region, or vnode.
+
+**Chapter**: 6 - Partitioning
+</Accordion>
+
+<Accordion title="Percentiles">
+Statistical measure showing the value below which a given percentage of observations fall. p99 means 99% of requests are faster than this value. Better than averages for understanding tail latency.
+
+**Chapter**: 1 - Reliable, Scalable, and Maintainable Applications
+</Accordion>
+
+<Accordion title="Protocol Buffers">
+Binary encoding format developed by Google requiring a schema. Uses tag numbers for fields, enabling schema evolution. More compact than JSON.
+
+**Chapter**: 4 - Encoding and Evolution
+</Accordion>
+
+<Accordion title="Quorum">
+Minimum number of nodes that must participate in an operation for it to succeed. In quorum reads/writes: w + r > n ensures reading latest value (w=write quorum, r=read quorum, n=replicas).
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Raft">
+Consensus algorithm designed to be more understandable than Paxos. Used in etcd, Consul. Provides leader election and replicated log.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Read repair">
+Technique in leaderless replication where a client detects stale values during reads and writes back the latest value to out-of-date replicas.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Read-after-write consistency">
+Guarantee that after a user writes data, they will always see that data on subsequent reads. Also called read-your-writes consistency.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Rebalancing">
+Process of moving data from one node to another when nodes are added or removed, or when load becomes unbalanced. Should minimize data movement and allow continued operation.
+
+**Chapter**: 6 - Partitioning
+</Accordion>
+
+<Accordion title="Reliability">
+System's ability to continue working correctly even when things go wrong (hardware faults, software errors, human mistakes). Achieved through redundancy and fault tolerance.
+
+**Chapter**: 1 - Reliable, Scalable, and Maintainable Applications
+</Accordion>
+
+<Accordion title="Replication">
+Keeping copies of the same data on multiple machines for redundancy and performance. Fundamental technique in distributed data systems.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Replication lag">
+Delay between a write on the leader and when that write becomes visible on a follower. Can cause various consistency issues in asynchronous replication.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="RPC (Remote Procedure Call)">
+Communication pattern that tries to make remote function calls look like local ones. Examples: gRPC, Thrift. Hides network complexity but can be problematic.
+
+**Chapter**: 4 - Encoding and Evolution
+</Accordion>
+
+<Accordion title="Scalability">
+System's ability to cope with increased load by adding resources. Can scale vertically (more powerful machine) or horizontally (more machines).
+
+**Chapter**: 1 - Reliable, Scalable, and Maintainable Applications
+</Accordion>
+
+<Accordion title="Schema evolution">
+The process of changing database schemas over time while maintaining compatibility with existing data and code. Critical for zero-downtime deployments.
+
+**Chapter**: 4 - Encoding and Evolution
+</Accordion>
+
+<Accordion title="Schema-on-read">
+Approach where data structure is interpreted when reading (document databases). Flexible but requires application to handle variations. Contrast with schema-on-write.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Schema-on-write">
+Approach where database enforces schema when writing (relational databases). Provides guarantees but requires migrations for changes.
+
+**Chapter**: 2 - Data Models and Query Languages
+</Accordion>
+
+<Accordion title="Secondary index">
+Additional index structure beyond the primary key, enabling efficient queries on non-key columns. In distributed systems, can be local (per partition) or global.
+
+**Chapter**: 6 - Partitioning
+</Accordion>
+
+<Accordion title="Serializability">
+Strongest isolation level for transactions. Result is the same as if transactions executed serially (one at a time), even though they may actually run concurrently.
+
+**Chapter**: 7 - Transactions
+</Accordion>
+
+<Accordion title="Skew">
+Uneven distribution of data or load across partitions. Hot spots occur when one partition has much more load than others.
+
+**Chapter**: 6 - Partitioning
+</Accordion>
+
+<Accordion title="Split brain">
+Dangerous failure scenario where multiple nodes believe they are the leader simultaneously. Can cause data divergence and corruption. Prevented with fencing or quorums.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="SSTable (Sorted String Table)">
+File format where key-value pairs are sorted by key. Enables efficient merging and range queries. Used in LSM-trees.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Star schema">
+Common data warehouse schema with central fact table surrounded by dimension tables. Optimized for analytics queries.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="Stream processing">
+Continuous processing of unbounded data streams. Lower latency than batch processing. Used for real-time analytics, monitoring, alerting.
+
+**Chapter**: 11 - Stream Processing
+</Accordion>
+
+<Accordion title="Synchronous replication">
+Replication where the leader waits for acknowledgment from followers before confirming writes to clients. Guarantees durability but reduces availability.
+
+**Chapter**: 5 - Replication
+</Accordion>
+
+<Accordion title="Thrift">
+Binary encoding format developed by Facebook requiring a schema. Similar to Protocol Buffers with different encoding formats available.
+
+**Chapter**: 4 - Encoding and Evolution
+</Accordion>
+
+<Accordion title="Timeout">
+Maximum time to wait for a response before considering an operation failed. Critical for detecting failures in distributed systems but hard to choose correctly.
+
+**Chapter**: 8 - The Trouble with Distributed Systems
+</Accordion>
+
+<Accordion title="Total order broadcast">
+Protocol ensuring all messages are delivered to all nodes in the same order. Equivalent to consensus. Used for state machine replication.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Transaction">
+Way to group multiple reads and writes into a logical unit that either completely succeeds (commits) or fails (aborts). Simplifies error handling.
+
+**Chapter**: 7 - Transactions
+</Accordion>
+
+<Accordion title="Two-phase commit (2PC)">
+Algorithm for atomic commit across multiple nodes. Uses coordinator to ensure all participants either commit or abort together. Blocking if coordinator fails.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="Vector clock">
+Data structure for tracking causality in distributed systems. Each node maintains counters for all nodes. Enables detecting concurrent vs. causally-ordered operations.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+<Accordion title="WAL (Write-Ahead Log)">
+Append-only log of all database writes. Written before applying changes to data structures. Enables crash recovery and replication.
+
+**Chapter**: 3 - Storage and Retrieval
+</Accordion>
+
+<Accordion title="ZooKeeper">
+Coordination service for distributed systems. Provides consensus, leader election, and configuration management. Uses ZAB consensus algorithm.
+
+**Chapter**: 9 - Consistency and Consensus
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,575 @@
+---
+title: Study guide
+description: Comprehensive study guide with recommended reading order, key concepts, and practical exercises
+---
+
+This study guide will help you navigate Designing Data-Intensive Applications effectively, whether you're learning for the first time or reviewing key concepts.
+
+## Recommended reading order
+
+The book is designed to be read sequentially, but you can adapt based on your goals and experience level.
+
+<Steps>
+  <Step title="Foundation: Chapters 1-4">
+    Build core understanding of data systems fundamentals.
+    
+    **Chapter 1: Reliable, Scalable, and Maintainable Applications**
+    - Understand the three pillars of data systems
+    - Learn about fault tolerance vs. fault prevention
+    - Study vertical vs. horizontal scaling
+    
+    **Chapter 2: Data Models and Query Languages**
+    - Compare relational, document, and graph models
+    - Understand when to use each data model
+    - Learn declarative vs. imperative queries
+    
+    **Chapter 3: Storage and Retrieval**
+    - Master log-structured vs. update-in-place storage
+    - Understand B-trees and LSM-trees
+    - Learn column-oriented storage for analytics
+    
+    **Chapter 4: Encoding and Evolution**
+    - Study schema evolution techniques
+    - Compare JSON, Thrift, Protocol Buffers, and Avro
+    - Understand backward and forward compatibility
+  </Step>
+
+  <Step title="Distributed data: Chapters 5-9">
+    Dive deep into distributed systems challenges and solutions.
+    
+    **Chapter 5: Replication**
+    - Master leader-based, multi-leader, and leaderless replication
+    - Understand replication lag and consistency issues
+    - Study read-after-write and monotonic read guarantees
+    
+    **Chapter 6: Partitioning**
+    - Learn key-range vs. hash partitioning
+    - Understand secondary indexes in partitioned databases
+    - Study rebalancing strategies
+    
+    **Chapter 7: Transactions**
+    - Master ACID properties
+    - Understand isolation levels (read committed, repeatable read, serializable)
+    - Learn about concurrency problems (dirty reads, lost updates)
+    
+    **Chapter 8: The Trouble with Distributed Systems**
+    - Understand partial failures and network issues
+    - Study unreliable clocks and their implications
+    - Learn about detecting faults with timeouts
+    
+    **Chapter 9: Consistency and Consensus**
+    - Master linearizability vs. serializability
+    - Understand causality and ordering guarantees
+    - Study consensus algorithms (Paxos, Raft)
+  </Step>
+
+  <Step title="Derived data: Chapters 10-12">
+    Learn about processing and integrating data systems.
+    
+    **Chapter 10: Batch Processing**
+    - Understand MapReduce and distributed filesystems
+    - Learn join algorithms in batch processing
+    - Study dataflow engines beyond MapReduce
+    
+    **Chapter 11: Stream Processing**
+    - Master event streams and message brokers
+    - Understand change data capture (CDC)
+    - Learn stream processing frameworks
+    
+    **Chapter 12: The Future of Data Systems**
+    - Study data integration patterns
+    - Understand unbundling databases
+    - Learn lambda and kappa architectures
+  </Step>
+</Steps>
+
+## Alternative reading paths
+
+### For practitioners building systems
+
+<CardGroup cols={2}>
+  <Card title="Immediate needs" icon="rocket">
+    **Quick practical path:**
+    1. Chapter 1 (overview)
+    2. Chapter 5 (replication basics)
+    3. Chapter 7 (transactions)
+    4. Chapters you need for current project
+    5. Return to fill gaps
+  </Card>
+
+  <Card title="Backend engineers" icon="server">
+    **Focus on:**
+    - Chapters 2-3 (storage fundamentals)
+    - Chapter 5 (replication)
+    - Chapter 6 (partitioning)
+    - Chapter 7 (transactions)
+    - Chapter 11 (streaming for real-time systems)
+  </Card>
+
+  <Card title="Data engineers" icon="database">
+    **Focus on:**
+    - Chapter 3 (storage, especially OLAP)
+    - Chapter 10 (batch processing, MapReduce)
+    - Chapter 11 (stream processing)
+    - Chapter 12 (data integration)
+  </Card>
+
+  <Card title="Distributed systems engineers" icon="network-wired">
+    **Focus on:**
+    - Chapters 5-9 (all distributed data chapters)
+    - Pay special attention to:
+      - Chapter 8 (failure modes)
+      - Chapter 9 (consensus)
+  </Card>
+</CardGroup>
+
+## Key concepts to master
+
+### Part 1: Foundations of data systems
+
+<AccordionGroup>
+  <Accordion title="Chapter 1: Core principles">
+    **Critical concepts:**
+    - **Reliability**: Faults vs. failures, fault tolerance strategies
+    - **Scalability**: Load parameters, describing performance with percentiles
+    - **Maintainability**: Operability, simplicity, evolvability
+    
+    **Key insight**: Describe system behavior with concrete metrics, not vague terms like "fast" or "scalable"
+    
+    **Practical exercise**: For a system you know, identify its load parameters and measure p50, p95, p99 response times
+  </Accordion>
+
+  <Accordion title="Chapter 2: Choosing data models">
+    **Critical concepts:**
+    - **Relational model**: Normalized data, joins, ACID transactions
+    - **Document model**: Schema flexibility, data locality, embedded documents
+    - **Graph model**: Many-to-many relationships, traversals, pattern matching
+    
+    **Key insight**: Data model choice affects how you think about problems and write code
+    
+    **Practical exercise**: Model a social network in relational, document, and graph databases. Compare query complexity.
+  </Accordion>
+
+  <Accordion title="Chapter 3: Storage engines">
+    **Critical concepts:**
+    - **Log-structured storage**: LSM-trees, SSTables, compaction
+    - **B-trees**: In-place updates, balanced tree, fixed-size pages
+    - **OLTP vs. OLAP**: Different workload patterns need different storage
+    - **Column storage**: Compression, vectorized processing
+    
+    **Key insight**: Write-optimized (LSM) vs. read-optimized (B-tree) storage engines
+    
+    **Practical exercise**: Implement a simple key-value store with hash index and log-structured storage
+  </Accordion>
+
+  <Accordion title="Chapter 4: Data encoding">
+    **Critical concepts:**
+    - **Schema evolution**: Adding/removing fields, changing types
+    - **Compatibility**: Backward (new reads old) and forward (old reads new)
+    - **Encoding formats**: JSON vs. Thrift vs. Protocol Buffers vs. Avro
+    
+    **Key insight**: Plan for schema changes from day one. Old and new code will coexist during deployments.
+    
+    **Practical exercise**: Define a Protocol Buffers schema, evolve it by adding optional fields, test compatibility
+  </Accordion>
+</AccordionGroup>
+
+### Part 2: Distributed data
+
+<AccordionGroup>
+  <Accordion title="Chapter 5: Replication fundamentals">
+    **Critical concepts:**
+    - **Leader-based replication**: Synchronous vs. asynchronous, failover
+    - **Multi-leader replication**: Write conflicts, conflict resolution
+    - **Leaderless replication**: Quorums, read repair, anti-entropy
+    - **Consistency issues**: Read-after-write, monotonic reads, consistent prefix
+    
+    **Key insight**: Replication lag is unavoidable with async replication. Design your application to handle it.
+    
+    **Practical exercise**: Set up PostgreSQL with streaming replication. Observe replication lag. Test failover scenarios.
+  </Accordion>
+
+  <Accordion title="Chapter 6: Partitioning strategies">
+    **Critical concepts:**
+    - **Partitioning by key range**: Efficient range queries, risk of hot spots
+    - **Partitioning by hash**: Even distribution, no range queries
+    - **Secondary indexes**: Document-partitioned (local) vs. term-partitioned (global)
+    - **Rebalancing**: Fixed partitions, dynamic partitioning, proportional to nodes
+    
+    **Key insight**: Partitioning is for scalability. Replication is for fault tolerance. Use both together.
+    
+    **Practical exercise**: Partition a dataset by hash. Measure load distribution. Identify and fix hot spots.
+  </Accordion>
+
+  <Accordion title="Chapter 7: Transaction isolation">
+    **Critical concepts:**
+    - **ACID properties**: Atomicity, consistency, isolation, durability
+    - **Isolation levels**: Read committed, repeatable read, serializable
+    - **Concurrency problems**: Dirty reads, dirty writes, lost updates, write skew, phantoms
+    - **Implementing serializability**: Actual serial execution, 2PL, SSI
+    
+    **Key insight**: Weak isolation levels have subtle edge cases. Understand what guarantees you actually need.
+    
+    **Practical exercise**: Create race conditions (lost update, write skew) in a database. Fix them with appropriate isolation level.
+  </Accordion>
+
+  <Accordion title="Chapter 8: Distributed system realities">
+    **Critical concepts:**
+    - **Unreliable networks**: Packet loss, delays, partitions
+    - **Unreliable clocks**: Clock skew, monotonic vs. time-of-day
+    - **Partial failures**: Cannot distinguish crashed vs. slow
+    - **Timeouts and retries**: Exponential backoff, idempotency
+    
+    **Key insight**: In distributed systems, you often can't tell what happened. Design for uncertainty.
+    
+    **Practical exercise**: Use tc (traffic control) to inject network latency/loss. Observe how applications behave.
+  </Accordion>
+
+  <Accordion title="Chapter 9: Consistency and consensus">
+    **Critical concepts:**
+    - **Linearizability**: Strongest consistency, appears as single copy
+    - **Causality**: Happens-before relationship, causal consistency
+    - **Consensus**: Getting nodes to agree, Paxos, Raft, ZAB
+    - **Total order broadcast**: Equivalent to consensus
+    
+    **Key insight**: Consensus is expensive but necessary for coordination problems like leader election.
+    
+    **Practical exercise**: Set up etcd or Consul cluster. Observe leader election. Test partition scenarios.
+  </Accordion>
+</AccordionGroup>
+
+### Part 3: Derived data
+
+<AccordionGroup>
+  <Accordion title="Chapter 10: Batch processing patterns">
+    **Critical concepts:**
+    - **MapReduce**: Map phase, shuffle, reduce phase
+    - **Distributed joins**: Broadcast join, partitioned join, map-side join
+    - **Dataflow engines**: Beyond MapReduce (Spark, Flink)
+    - **Graph processing**: Pregel model, bulk synchronous parallel
+    
+    **Key insight**: Batch processing is about high throughput on large datasets, not low latency.
+    
+    **Practical exercise**: Write a MapReduce job to analyze logs. Implement a join between two large datasets.
+  </Accordion>
+
+  <Accordion title="Chapter 11: Stream processing">
+    **Critical concepts:**
+    - **Event streams**: Messages vs. events, Kafka, Kinesis
+    - **Change data capture**: Streaming database changes
+    - **Event sourcing**: Immutable event log, deriving state
+    - **Stream processing**: Windowing, joins, fault tolerance
+    
+    **Key insight**: Streams bridge batch and request-response. Lower latency than batch, more fault-tolerant than services.
+    
+    **Practical exercise**: Set up Kafka. Implement CDC from database. Build stream processor with windowed aggregations.
+  </Accordion>
+
+  <Accordion title="Chapter 12: Integration patterns">
+    **Critical concepts:**
+    - **Unbundling databases**: Separate specialized systems
+    - **Dataflow architectures**: Event log as integration backbone
+    - **Derived data**: System of record vs. derived views
+    - **Lambda vs. Kappa**: Batch + stream vs. stream only
+    
+    **Key insight**: Modern applications are composed of multiple specialized databases, integrated via event streams.
+    
+    **Practical exercise**: Design a system with OLTP database, cache, search index, and analytics warehouse. Use CDC for integration.
+  </Accordion>
+</AccordionGroup>
+
+## Common pitfalls and misconceptions
+
+<Warning>
+**Avoid these common mistakes when learning and applying concepts:**
+
+1. **"NoSQL is always better than SQL"**
+   - Wrong. Choose based on data model and access patterns
+   - Relational databases still excel for many use cases
+
+2. **"Eventual consistency is good enough"**
+   - Maybe, but understand the anomalies your application can tolerate
+   - Some use cases require strong consistency
+
+3. **"Distributed transactions are impossible"**
+   - They're possible but expensive and limit availability
+   - Often better to avoid them, but understand the trade-offs
+
+4. **"CAP theorem means choose 2 of 3"**
+   - Misleading. In reality, network partitions are rare events
+   - During partition, must choose consistency or availability
+   - Rest of the time, can have both
+
+5. **"Microservices solve all problems"**
+   - They introduce distributed systems challenges
+   - Benefits come with complexity costs
+
+6. **"Schema changes require downtime"**
+   - Not with proper schema evolution techniques
+   - Backward and forward compatibility enable zero-downtime deployments
+</Warning>
+
+## Practical exercises and projects
+
+### Beginner level
+
+<CardGroup cols={2}>
+  <Card title="Build a key-value store" icon="database">
+    **Learning goals**: Storage engines, indexing
+    
+    Implement:
+    - Hash index with log-structured storage
+    - Compaction to prevent infinite growth
+    - Crash recovery
+    
+    **Tech**: Python, file I/O
+  </Card>
+
+  <Card title="Set up replication" icon="copy">
+    **Learning goals**: Replication, failover
+    
+    Implement:
+    - PostgreSQL primary with 2 replicas
+    - Streaming replication
+    - Test failover manually
+    
+    **Tech**: PostgreSQL, Docker
+  </Card>
+
+  <Card title="Compare data models" icon="shapes">
+    **Learning goals**: Data modeling trade-offs
+    
+    Model the same domain in:
+    - Relational (PostgreSQL)
+    - Document (MongoDB)
+    - Graph (Neo4j)
+    
+    Compare query complexity and performance
+  </Card>
+
+  <Card title="Explore consistency" icon="arrows-rotate">
+    **Learning goals**: Replication lag, consistency
+    
+    Experiment with:
+    - Read from leader vs. follower
+    - Measure replication lag
+    - Observe eventual consistency
+    
+    **Tech**: PostgreSQL replication
+  </Card>
+</CardGroup>
+
+### Intermediate level
+
+<CardGroup cols={2}>
+  <Card title="Build a distributed cache" icon="bolt">
+    **Learning goals**: Partitioning, consistent hashing
+    
+    Implement:
+    - Consistent hashing ring
+    - Partition assignment
+    - Handle node additions/removals
+    
+    **Tech**: Python/Go, Redis
+  </Card>
+
+  <Card title="Implement MapReduce" icon="diagram-project">
+    **Learning goals**: Batch processing
+    
+    Implement:
+    - Simple MapReduce framework
+    - Word count, join operations
+    - Fault tolerance
+    
+    **Tech**: Python, multiprocessing
+  </Card>
+
+  <Card title="Build event sourcing system" icon="timeline">
+    **Learning goals**: Event logs, derived state
+    
+    Implement:
+    - Event store
+    - State reconstruction from events
+    - Multiple projections
+    
+    **Tech**: Kafka, any language
+  </Card>
+
+  <Card title="Transaction isolation levels" icon="shield">
+    **Learning goals**: Concurrency, isolation
+    
+    Demonstrate:
+    - Lost updates with read committed
+    - Write skew with repeatable read
+    - Fix with serializable isolation
+    
+    **Tech**: PostgreSQL
+  </Card>
+</CardGroup>
+
+### Advanced level
+
+<CardGroup cols={2}>
+  <Card title="Consensus implementation" icon="handshake">
+    **Learning goals**: Distributed consensus
+    
+    Implement:
+    - Simplified Raft consensus
+    - Leader election
+    - Log replication
+    
+    **Tech**: Go/Rust, networking
+  </Card>
+
+  <Card title="Streaming platform" icon="water">
+    **Learning goals**: Stream processing
+    
+    Build:
+    - CDC from database
+    - Stream processing pipelines
+    - Windowed aggregations
+    
+    **Tech**: Kafka, Flink/Spark Streaming
+  </Card>
+
+  <Card title="Multi-datacenter architecture" icon="globe">
+    **Learning goals**: Geo-distribution, consistency
+    
+    Design:
+    - Multi-region deployment
+    - Conflict resolution
+    - Latency optimization
+    
+    **Tech**: Cloud providers, distributed DB
+  </Card>
+
+  <Card title="Data integration platform" icon="plug">
+    **Learning goals**: System composition
+    
+    Integrate:
+    - OLTP database
+    - Search index
+    - Analytics warehouse
+    - Cache layer
+    
+    All synchronized via CDC and event streams
+  </Card>
+</CardGroup>
+
+## Discussion questions
+
+Use these questions to deepen your understanding:
+
+1. **Why do we need so many different databases?**
+   - Consider: different data models, workload patterns, CAP trade-offs
+
+2. **When is eventual consistency acceptable?**
+   - Think about: user expectations, business requirements, error handling
+
+3. **What makes distributed systems hard?**
+   - Examine: partial failures, network unreliability, asynchronous execution
+
+4. **How do you choose between batch and stream processing?**
+   - Consider: latency requirements, data volumes, complexity tolerance
+
+5. **Is microservices architecture worth the complexity?**
+   - Weigh: team independence, deployment flexibility vs. distributed system challenges
+
+6. **How important is backward compatibility?**
+   - Think about: rolling deployments, mobile apps, third-party integrations
+
+## Further resources
+
+After completing this book, continue learning with:
+
+<CardGroup cols={2}>
+  <Card title="Academic papers" icon="graduation-cap">
+    Read the original research papers referenced throughout the book. Start with:
+    - Bigtable, Dynamo, Spanner
+    - Paxos, Raft consensus algorithms
+    - Dremel (columnar storage)
+  </Card>
+
+  <Card title="Open source projects" icon="code">
+    Study implementations of concepts:
+    - PostgreSQL (B-trees, MVCC, replication)
+    - Cassandra (leaderless replication, LSM-trees)
+    - Kafka (event log, partitioning)
+    - etcd (Raft consensus)
+  </Card>
+
+  <Card title="System design practice" icon="diagram-project">
+    Apply your knowledge:
+    - Practice system design interviews
+    - Design real-world systems
+    - Read architecture blogs (Netflix, Uber, LinkedIn)
+  </Card>
+
+  <Card title="Related books" icon="book">
+    Deepen specific areas:
+    - "Database Internals" by Alex Petrov
+    - "Streaming Systems" by Tyler Akidau
+    - "Designing Distributed Systems" by Brendan Burns
+  </Card>
+</CardGroup>
+
+## Retention strategies
+
+<Steps>
+  <Step title="Active reading">
+    Don't just read passively. For each chapter:
+    - Take notes in your own words
+    - Draw diagrams of concepts
+    - Explain concepts to a colleague
+  </Step>
+
+  <Step title="Hands-on practice">
+    Theory alone isn't enough:
+    - Complete practical exercises
+    - Set up actual systems
+    - Break things and fix them
+  </Step>
+
+  <Step title="Spaced repetition">
+    Review periodically:
+    - Week 1: Review all chapters
+    - Month 1: Review key concepts
+    - Month 3: Review challenging topics
+    - Month 6: Full review
+  </Step>
+
+  <Step title="Apply to real work">
+    Best way to learn:
+    - Apply concepts to your projects
+    - Evaluate existing systems with new knowledge
+    - Share learnings with your team
+  </Step>
+</Steps>
+
+## Quick reference
+
+### When to use what
+
+| Use case | Best choice | Why |
+|----------|-------------|-----|
+| **Transactional workload** | Relational DB | ACID, joins, constraints |
+| **Hierarchical data** | Document DB | Schema flexibility, locality |
+| **Highly connected data** | Graph DB | Relationship traversal |
+| **High write throughput** | LSM-tree storage | Sequential writes |
+| **Analytics queries** | Column-oriented DB | Scan efficiency |
+| **Strong consistency needed** | Single-leader replication | Linearizability |
+| **Multi-datacenter writes** | Multi-leader or leaderless | Availability during partitions |
+| **Event-driven architecture** | Event streaming (Kafka) | Decoupling, scalability |
+| **Large batch analytics** | Hadoop/Spark | High throughput |
+| **Real-time analytics** | Stream processing | Low latency |
+
+### Trade-off cheat sheet
+
+| Trade-off | Choose A if... | Choose B if... |
+|-----------|---------------|---------------|
+| **Consistency vs. Availability** | Correctness critical (banking) | Uptime critical (social media) |
+| **Normalization vs. Denormalization** | Write-heavy, need consistency | Read-heavy, can tolerate staleness |
+| **B-tree vs. LSM-tree** | Read-heavy workload | Write-heavy workload |
+| **Batch vs. Stream** | Can tolerate hours of latency | Need minute/second latency |
+| **Vertical vs. Horizontal scaling** | Simpler operations | Need unlimited scale |
+| **Microservices vs. Monolith** | Independent team scaling | Simpler operations |

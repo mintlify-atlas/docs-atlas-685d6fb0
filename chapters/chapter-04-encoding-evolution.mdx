@@ -1,0 +1,657 @@
+---
+title: Encoding and evolution
+description: Learn how to handle schema changes and data evolution in distributed systems using encoding formats like JSON, Thrift, Protocol Buffers, and Avro.
+---
+
+## Introduction
+
+Applications inevitably change over time:
+- New features are added
+- Requirements change
+- Bug fixes are deployed
+- Performance improvements are made
+
+In most cases, a change to an application's features also requires a change to the data it stores.
+
+**The challenge**: How do we manage schema changes when old and new code need to coexist?
+
+**Key concepts**:
+- **Backward compatibility**: New code can read data written by old code
+- **Forward compatibility**: Old code can read data written by new code
+
+This chapter explores how different encoding formats handle schema evolution.
+
+## 1. Formats for encoding data
+
+When you want to send data over the network or write it to a file, you need to encode it as a sequence of bytes.
+
+### Language-specific formats
+
+Many programming languages have built-in encoding (Python's pickle, Java's Serializable, Ruby's Marshal).
+
+**Problems**:
+- Tied to one language
+- Security issues (arbitrary code execution)
+- Poor versioning support
+- Inefficient
+
+<Warning>
+Avoid language-specific formats for data that needs to outlive a single process.
+</Warning>
+
+### JSON, XML, and CSV
+
+Text-based formats that are human-readable and language-independent.
+
+**Advantages**:
+- Human readable
+- Language independent
+- Widely supported
+
+**Disadvantages**:
+- Ambiguity with numbers
+- No binary string support
+- Verbose, larger size
+- Schema support varies
+
+**Problems with JSON/XML**:
+
+```python
+import json
+
+# Problem: Large integers lose precision
+large_number = 9007199254740993
+encoded = json.dumps({'id': large_number})
+decoded = json.loads(encoded)
+
+print(f"Original: {large_number}")
+print(f"After JSON: {decoded['id']}")
+# May not be equal depending on implementation!
+
+# Problem: No binary data support
+binary_data = b'\x00\x01\x02\xff'
+# json.dumps({'data': binary_data})  # TypeError!
+
+# Workaround: Base64 encode
+import base64
+encoded_binary = base64.b64encode(binary_data).decode('ascii')
+json_safe = json.dumps({'data': encoded_binary})
+# But now it's 33% larger and not human-readable
+```
+
+### Binary encoding
+
+Text formats are verbose. Binary formats are more compact and faster to parse.
+
+**Size comparison**:
+```python
+import json
+import msgpack
+
+data = {
+    'name': 'Alice Johnson',
+    'age': 30,
+    'email': 'alice@example.com'
+}
+
+json_encoded = json.dumps(data).encode('utf-8')
+msgpack_encoded = msgpack.packb(data)
+
+print(f"JSON size: {len(json_encoded)} bytes")
+print(f"MessagePack size: {len(msgpack_encoded)} bytes")
+print(f"Reduction: {(1 - len(msgpack_encoded)/len(json_encoded)) * 100:.1f}%")
+
+# Output:
+# JSON size: 67 bytes
+# MessagePack size: 52 bytes
+# Reduction: 22.4%
+```
+
+## 2. Thrift and Protocol Buffers
+
+Binary encoding formats that require a schema.
+
+**Benefits**:
+- Compact binary encoding
+- Type safety
+- Schema evolution support
+- Code generation
+
+### Thrift
+
+**Schema definition (Thrift IDL)**:
+```thrift
+struct Person {
+    1: required string name,
+    2: optional i32 age,
+    3: optional string email
+}
+```
+
+<Info>
+**Key insight**: Fields are identified by **tag numbers** (1, 2, 3), not field names. This enables schema evolution.
+</Info>
+
+```python
+# Using Thrift in Python (after code generation)
+from thrift.protocol import TCompactProtocol
+from thrift.transport import TTransport
+
+# Create object
+person = Person(name="Alice", age=30, email="alice@example.com")
+
+# Encode
+transport = TTransport.TMemoryBuffer()
+protocol = TCompactProtocol.TCompactProtocol(transport)
+person.write(protocol)
+encoded = transport.getvalue()
+
+print(f"Encoded size: {len(encoded)} bytes")
+
+# Decode
+transport2 = TTransport.TMemoryBuffer(encoded)
+protocol2 = TCompactProtocol.TCompactProtocol(transport2)
+person2 = Person()
+person2.read(protocol2)
+
+print(f"Decoded: {person2}")
+```
+
+### Protocol Buffers
+
+Similar to Thrift, developed by Google.
+
+**Schema definition (Protocol Buffers)**:
+```protobuf
+message Person {
+    required string name = 1;
+    optional int32 age = 2;
+    optional string email = 3;
+}
+```
+
+**Varint encoding** - compact representation of integers:
+
+Small numbers use fewer bytes!
+
+```python
+# Varint encoding example
+def encode_varint(n):
+    """Encode integer as varint"""
+    bytes_list = []
+    while n > 127:
+        bytes_list.append((n & 0x7F) | 0x80)  # Set continuation bit
+        n >>= 7
+    bytes_list.append(n & 0x7F)  # Last byte, no continuation bit
+    return bytes(bytes_list)
+
+def decode_varint(bytes_data):
+    """Decode varint to integer"""
+    n = 0
+    shift = 0
+    for byte in bytes_data:
+        n |= (byte & 0x7F) << shift
+        if (byte & 0x80) == 0:  # No continuation bit
+            break
+        shift += 7
+    return n
+
+# Examples
+print(f"1 encoded: {encode_varint(1).hex()}")      # 01
+print(f"127 encoded: {encode_varint(127).hex()}")  # 7f
+print(f"128 encoded: {encode_varint(128).hex()}")  # 8001
+print(f"300 encoded: {encode_varint(300).hex()}")  # ac02
+```
+
+## 3. Schema evolution
+
+The key to maintaining compatibility during schema changes.
+
+### Adding fields
+
+<Note>
+**Rule**: New fields must be **optional** or have **default values** for backward compatibility.
+</Note>
+
+```protobuf
+// Schema v1
+message Person {
+    required string name = 1;
+    optional int32 age = 2;
+}
+
+// Schema v2 - Adding email field
+message Person {
+    required string name = 1;
+    optional int32 age = 2;
+    optional string email = 3;  // NEW - must be optional!
+}
+```
+
+```python
+# Example: Backward compatibility
+# Old code writes data (v1 schema)
+old_data = encode_v1(Person(name="Alice", age=30))
+
+# New code reads data (v2 schema)
+person = decode_v2(old_data)
+print(person.name)   # "Alice" ✓
+print(person.age)    # 30 ✓
+print(person.email)  # None (default) ✓
+```
+
+### Removing fields
+
+**Rules for removing fields**:
+1. Can only remove **optional** fields (never required!)
+2. Cannot reuse tag number (forward compatibility!)
+
+```protobuf
+// Schema v1
+message Person {
+    required string name = 1;
+    optional int32 age = 2;      // Will remove this
+    optional string email = 3;
+}
+
+// Schema v2 - Removing age
+message Person {
+    required string name = 1;
+    // optional int32 age = 2;  // REMOVED
+    optional string email = 3;
+    // Can never use tag 2 again!
+}
+```
+
+### Changing field types
+
+<Tip>
+Some type changes are safe (like int32 to int64 for forward compatibility), but they may lose precision in backward compatibility. Always test thoroughly.
+</Tip>
+
+**Example of safe type change**:
+```protobuf
+// Schema v1
+message Person {
+    optional int32 age = 2;  // 32-bit integer
+}
+
+// Schema v2
+message Person {
+    optional int64 age = 2;  // 64-bit integer
+}
+```
+
+## 4. Avro
+
+A different approach to schema evolution, developed for Hadoop.
+
+**Avro difference**: No tag numbers in schema!
+
+**Avro schema (JSON)**:
+```json
+{
+    "type": "record",
+    "name": "Person",
+    "fields": [
+        {"name": "name", "type": "string"},
+        {"name": "age", "type": ["null", "int"], "default": null},
+        {"name": "email", "type": ["null", "string"], "default": null}
+    ]
+}
+```
+
+### Writer's schema vs reader's schema
+
+Avro's key insight: Need both schemas to decode data!
+
+**How Avro resolves schemas**: The reader compares the writer's schema with its own schema and maps fields by name.
+
+**Schema resolution rules**:
+- Writer field present, reader field present: Match by name, convert if types compatible
+- Writer field present, reader field absent: Ignore field
+- Writer field absent, reader field present: Use default value or null
+
+### Schema evolution in Avro
+
+**Adding a field**:
+```json
+// Writer schema v1
+{
+    "type": "record",
+    "name": "Person",
+    "fields": [
+        {"name": "name", "type": "string"}
+    ]
+}
+
+// Reader schema v2 - Add email field
+{
+    "type": "record",
+    "name": "Person",
+    "fields": [
+        {"name": "name", "type": "string"},
+        {"name": "email", "type": ["null", "string"], "default": null}
+    ]
+}
+```
+
+```python
+# Backward compatibility
+import avro.io
+import avro.schema
+from io import BytesIO
+
+# Writer uses v1 schema
+writer_schema = avro.schema.parse('''
+{
+    "type": "record",
+    "name": "Person",
+    "fields": [{"name": "name", "type": "string"}]
+}
+''')
+
+# Write data
+bytes_writer = BytesIO()
+encoder = avro.io.BinaryEncoder(bytes_writer)
+writer = avro.io.DatumWriter(writer_schema)
+writer.write({"name": "Alice"}, encoder)
+encoded = bytes_writer.getvalue()
+
+# Reader uses v2 schema
+reader_schema = avro.schema.parse('''
+{
+    "type": "record",
+    "name": "Person",
+    "fields": [
+        {"name": "name", "type": "string"},
+        {"name": "email", "type": ["null", "string"], "default": null}
+    ]
+}
+''')
+
+# Read data
+bytes_reader = BytesIO(encoded)
+decoder = avro.io.BinaryDecoder(bytes_reader)
+reader = avro.io.DatumReader(writer_schema, reader_schema)
+person = reader.read(decoder)
+
+print(person)  # {"name": "Alice", "email": None}
+```
+
+### Where does writer's schema come from?
+
+**Different contexts**:
+- **Large file with many records**: Include writer schema once at file start
+- **Database with schema registry**: Store schema version in each record, schema registry maps ID to schema
+- **Network service**: Negotiate schema at connection setup
+
+**Schema registry example**:
+```python
+# Schema registry example
+class SchemaRegistry:
+    def __init__(self):
+        self.schemas = {}  # schema_id -> schema
+        self.next_id = 1
+
+    def register_schema(self, schema):
+        """Register schema and get ID"""
+        schema_id = self.next_id
+        self.schemas[schema_id] = schema
+        self.next_id += 1
+        return schema_id
+
+    def get_schema(self, schema_id):
+        """Get schema by ID"""
+        return self.schemas[schema_id]
+
+# Usage
+registry = SchemaRegistry()
+
+# Writer registers schema
+writer_schema_id = registry.register_schema(person_schema_v1)
+
+# Write record with schema ID
+record = {
+    'schema_id': writer_schema_id,
+    'data': encode_avro(person, person_schema_v1)
+}
+
+# Reader retrieves schema
+writer_schema = registry.get_schema(record['schema_id'])
+decoded = decode_avro(record['data'], writer_schema, reader_schema)
+```
+
+### Avro vs Thrift/Protocol Buffers
+
+**Thrift/Protocol Buffers**:
+- Tag numbers enable field renaming
+- Schema embedded in code
+- Can't reuse tag numbers
+- Manual tag management
+
+**Avro**:
+- No tag numbers to manage
+- Can rename fields with aliases
+- Better for dynamic schemas
+- Need writer's schema to decode
+
+**Field aliases in Avro**:
+```json
+{
+    "type": "record",
+    "name": "Person",
+    "fields": [
+        {
+            "name": "full_name",
+            "type": "string",
+            "aliases": ["name"]  // Old field name
+        }
+    ]
+}
+```
+
+## 5. Modes of dataflow
+
+How does data flow between processes?
+
+**Three main modes**:
+1. **Via databases**: Process writes, another reads later
+2. **Via services**: Client sends request, server responds
+3. **Via message passing**: Async message queue
+
+### Dataflow through databases
+
+<Warning>
+Old code might inadvertently delete new fields when rewriting records. Always preserve unknown fields!
+</Warning>
+
+```python
+# Bad: Loses unknown fields
+class OldCode:
+    def update_age(self, record_id, new_age):
+        # Read with old schema
+        record = db.read(record_id)  # {name: "Alice", age: 30}
+
+        # Update
+        record['age'] = new_age
+
+        # Write back - LOSES email field added by new code!
+        db.write(record_id, record)
+
+# Good: Preserves unknown fields
+class GoodCode:
+    def update_age(self, record_id, new_age):
+        # Read with old schema, but keep raw data
+        raw_data = db.read_raw(record_id)
+        record = decode_keeping_unknown(raw_data)
+
+        # Update known fields
+        record['age'] = new_age
+
+        # Write back - preserves unknown fields
+        db.write(record_id, encode_with_unknown(record))
+```
+
+### Dataflow through services (REST and RPC)
+
+**Two main approaches**: REST and RPC
+
+**REST example**:
+```http
+GET /api/users/123 HTTP/1.1
+Host: example.com
+
+Response:
+{
+    "id": 123,
+    "name": "Alice",
+    "email": "alice@example.com"
+}
+```
+
+**RPC example (gRPC)**:
+```protobuf
+// Service definition
+service UserService {
+    rpc GetUser(UserRequest) returns (UserResponse);
+}
+
+message UserRequest {
+    int32 user_id = 1;
+}
+
+message UserResponse {
+    int32 id = 1;
+    string name = 2;
+    string email = 3;
+}
+```
+
+```python
+# Client code looks like local function call
+response = user_service.GetUser(UserRequest(user_id=123))
+print(response.name)  # "Alice"
+```
+
+<Note>
+RPC hides the differences between network calls and local calls, which can make debugging harder. Network calls are unpredictable, may fail, may timeout, and idempotency matters.
+</Note>
+
+**API versioning**:
+```http
+# URL versioning
+GET /api/v1/users/123
+GET /api/v2/users/123
+
+# Header versioning
+GET /api/users/123
+Accept: application/vnd.example.v2+json
+
+# Query parameter versioning
+GET /api/users/123?version=2
+```
+
+### Dataflow through message passing
+
+**Benefits of message queues**:
+- Decoupling: Sender doesn't need to know about receiver
+- Buffering: Queue absorbs bursts
+- Reliability: Retry on failure
+- Flexibility: Multiple consumers
+
+**Example systems**: RabbitMQ, Apache Kafka, Amazon SQS
+
+**Message format**:
+```json
+{
+    "schema_version": 2,
+    "event_type": "order_placed",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "data": {
+        "order_id": 12345,
+        "customer_id": 67890,
+        "total": 99.99
+    }
+}
+```
+
+**Schema evolution in messages**:
+
+```python
+# Producer (new schema)
+def send_order_event(order):
+    message = {
+        'schema_version': 2,  # Indicate schema version
+        'event_type': 'order_placed',
+        'data': {
+            'order_id': order.id,
+            'customer_id': order.customer_id,
+            'total': order.total,
+            'currency': order.currency  # NEW field in v2
+        }
+    }
+    queue.send('orders', message)
+
+# Consumer (old schema)
+def handle_order_event(message):
+    if message['schema_version'] == 1:
+        # Handle v1 schema
+        process_order_v1(message['data'])
+    elif message['schema_version'] == 2:
+        # Handle v2 schema, ignore new 'currency' field
+        process_order_v2(message['data'])
+    else:
+        # Unknown version, log and skip
+        log.warning(f"Unknown schema version: {message['schema_version']}")
+```
+
+### Actor model
+
+Each actor:
+- Has a mailbox for incoming messages
+- Processes messages sequentially
+- Can send messages to other actors
+- No shared state (concurrency-safe)
+
+**Examples**: Akka (JVM), Orleans (.NET), Erlang
+
+## Summary
+
+**Key takeaways**:
+
+1. **Encoding formats trade-offs**:
+   - JSON/XML: Human-readable, widely supported, verbose
+   - Thrift/Protobuf: Compact, fast, requires schema
+   - Avro: Most compact, dynamic schemas, complex resolution
+
+2. **Schema evolution essentials**:
+   - New fields must be optional or have defaults
+   - Can't remove required fields
+   - Can't reuse field tags/IDs
+   - Preserve unknown fields when possible
+
+3. **Compatibility requirements**:
+   - **Backward**: New code reads old data (common)
+   - **Forward**: Old code reads new data (harder)
+   - Both needed for rolling deployments
+
+4. **Dataflow patterns**:
+   - **Databases**: Long-lived data, many readers
+   - **Services**: Request-response, synchronous
+   - **Messages**: Asynchronous, decoupled
+
+5. **Best practices**:
+   - Include schema version in data
+   - Test compatibility between versions
+   - Use schema registry for centralized management
+   - Document breaking changes
+
+<Accordion title="Quick reference: Encoding format comparison">
+| Format | Size | Speed | Schema | Evolution | Use Case |
+|--------|------|-------|--------|-----------|----------|
+| JSON | Large | Slow | Optional | Limited | APIs, config files |
+| Thrift | Small | Fast | Required | Good | Internal services |
+| Protobuf | Small | Fast | Required | Good | gRPC, microservices |
+| Avro | Smallest | Fast | Required | Excellent | Hadoop, Kafka |
+</Accordion>

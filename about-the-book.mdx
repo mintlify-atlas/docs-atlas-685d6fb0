@@ -1,0 +1,143 @@
+---
+title: About the book
+description: Learn about the structure and approach of Designing Data-Intensive Applications
+---
+
+# About the book
+
+"Designing Data-Intensive Applications" by Martin Kleppmann is the definitive guide to building modern data systems. This book has become essential reading for software engineers, architects, and anyone working with large-scale data.
+
+## Book structure
+
+The book is organized into three parts that progressively build your understanding of data systems:
+
+<Tabs>
+  <Tab title="Part I">
+    ### Foundations of data systems
+    
+    The first four chapters establish the fundamental concepts you need to understand any data system:
+    
+    <Steps>
+      <Step title="Reliability, scalability, and maintainability">
+        Foundation chapter covering the three fundamental concerns in software systems: fault tolerance, handling growth, and long-term system health.
+      </Step>
+      
+      <Step title="Data models and query languages">
+        Explore relational, document, and graph databases, along with their query languages and trade-offs.
+      </Step>
+      
+      <Step title="Storage and retrieval">
+        Deep dive into database internals: hash indexes, SSTables, LSM-trees, B-trees, and OLTP vs. OLAP storage.
+      </Step>
+      
+      <Step title="Encoding and evolution">
+        Learn about data encoding formats (JSON, Protocol Buffers, Avro), schema evolution, and compatibility.
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Part II">
+    ### Distributed data
+    
+    The next five chapters tackle the challenges of distributing data across multiple machines:
+    
+    <CardGroup cols={2}>
+      <Card title="Replication" icon="copy">
+        Single-leader, multi-leader, and leaderless replication strategies with consistency challenges.
+      </Card>
+      
+      <Card title="Partitioning" icon="scissors">
+        Sharding strategies, secondary indexes, rebalancing, and request routing.
+      </Card>
+      
+      <Card title="Transactions" icon="handshake">
+        ACID properties, isolation levels, concurrency control, and distributed transactions.
+      </Card>
+      
+      <Card title="Distributed challenges" icon="triangle-exclamation">
+        Unreliable networks, clock issues, process pauses, and Byzantine faults.
+      </Card>
+      
+      <Card title="Consistency & consensus" icon="circle-check">
+        From eventual consistency to linearizability, plus Paxos, Raft, and coordination services.
+      </Card>
+    </CardGroup>
+  </Tab>
+  
+  <Tab title="Part III">
+    ### Derived data
+    
+    The final three chapters explore how to process and integrate data at scale:
+    
+    <AccordionGroup>
+      <Accordion title="Batch processing" icon="layer-group">
+        Unix tools, MapReduce, Spark, Flink, distributed filesystems (HDFS), and join algorithms for large-scale data processing.
+      </Accordion>
+      
+      <Accordion title="Stream processing" icon="water">
+        Event streams, Kafka, change data capture, event sourcing, windowing, and exactly-once semantics.
+      </Accordion>
+      
+      <Accordion title="The future" icon="crystal-ball">
+        Data integration, Lambda/Kappa architectures, CQRS, end-to-end correctness, and ethical considerations.
+      </Accordion>
+    </AccordionGroup>
+  </Tab>
+</Tabs>
+
+## How to use these notes
+
+These notes are designed to complement your reading of the book, not replace it. Here's how to get the most value:
+
+<CardGroup cols={2}>
+  <Card title="Read alongside the book" icon="book">
+    Use these notes as a companion while reading each chapter to reinforce concepts with additional examples and diagrams.
+  </Card>
+  
+  <Card title="Quick reference" icon="bookmark">
+    Return to these notes when you need to recall key concepts or patterns while working on real systems.
+  </Card>
+  
+  <Card title="Visual learning" icon="diagram-project">
+    Study the Mermaid diagrams to visualize complex concepts like replication topologies and data flow.
+  </Card>
+  
+  <Card title="Sequential reading" icon="list-ol">
+    Work through the chapters in order, as later chapters build on concepts introduced earlier.
+  </Card>
+</CardGroup>
+
+<Tip>
+Each chapter includes practical insights and real-world examples that extend beyond the book's content, helping you apply these principles to production systems.
+</Tip>
+
+## What makes this book special
+
+"Designing Data-Intensive Applications" stands out because it focuses on principles rather than specific technologies:
+
+- **Technology-agnostic**: Learn fundamental concepts that apply across databases and frameworks
+- **Comprehensive scope**: Covers everything from single-machine databases to distributed systems
+- **Practical focus**: Emphasizes real-world trade-offs and design decisions
+- **Timeless principles**: Core concepts remain relevant as technologies evolve
+
+<Warning>
+This book requires a solid understanding of basic programming and database concepts. If you're new to databases, consider starting with introductory material first.
+</Warning>
+
+## Getting the book
+
+You can purchase "Designing Data-Intensive Applications" from:
+
+- [O'Reilly Media](https://www.oreilly.com/library/view/designing-data-intensive-applications/9781491903063/)
+- Major book retailers (Amazon, bookstores, etc.)
+- Digital formats (Kindle, PDF, ePub)
+
+## Start your journey
+
+<Card 
+  title="Begin with Chapter 1" 
+  icon="play"
+  href="/chapters/chapter-01-reliable-scalable-maintainable"
+>
+  Start learning about reliable, scalable, and maintainable applications
+</Card>

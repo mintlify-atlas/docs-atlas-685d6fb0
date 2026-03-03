@@ -1,0 +1,446 @@
+---
+title: Storage and retrieval
+description: Learn how databases store data on disk and retrieve it efficiently, including hash indexes, SSTables, LSM-trees, B-trees, and column-oriented storage for analytics.
+---
+
+## Introduction
+
+On the most fundamental level, a database needs to do two things:
+1. **Store** data when you give it
+2. **Retrieve** data when you ask for it
+
+As an application developer, you're probably not going to implement your own storage engine from scratch, but you do need to select a storage engine that's appropriate for your application. To make that choice, you need to understand what storage engines are available and what trade-offs they make.
+
+There's a big difference between storage engines optimized for:
+- **Transactional workloads** (OLTP - Online Transaction Processing)
+- **Analytics workloads** (OLAP - Online Analytical Processing)
+
+## 1. Data structures that power your database
+
+### The simplest database
+
+Let's start with the simplest possible database:
+
+```bash
+#!/bin/bash
+
+db_set() {
+    echo "$1,$2" >> database
+}
+
+db_get() {
+    grep "^$1," database | sed -e "s/^$1,//" | tail -n 1
+}
+```
+
+**Performance**:
+- **Writes**: O(1) - very fast! Just append to file
+- **Reads**: O(n) - very slow! Must scan entire file
+
+```python
+# Python implementation
+class SimpleDB:
+    def __init__(self, filename='database.txt'):
+        self.filename = filename
+
+    def set(self, key, value):
+        """O(1) - Fast writes"""
+        with open(self.filename, 'a') as f:
+            f.write(f"{key},{value}\n")
+
+    def get(self, key):
+        """O(n) - Slow reads"""
+        result = None
+        with open(self.filename, 'r') as f:
+            for line in f:
+                if line.startswith(f"{key},"):
+                    result = line.split(',', 1)[1].strip()
+        return result
+
+# Usage
+db = SimpleDB()
+db.set('user:1', 'Alice')
+db.set('user:2', 'Bob')
+db.set('user:1', 'Alice Updated')  # Update by appending
+
+print(db.get('user:1'))  # Returns 'Alice Updated'
+```
+
+<Warning>
+As the database grows, reads become very slow. We need an **index** to speed up reads!
+</Warning>
+
+### Indexes
+
+An **index** is an additional structure derived from the primary data. It helps locate data without scanning everything.
+
+<Info>
+**Key insight**: Indexes slow down writes because you must update both the data and the index. This is an important trade-off in database design.
+</Info>
+
+## 2. Hash indexes
+
+The simplest indexing strategy is a **hash map** that keeps an in-memory index of every key's location in the data file.
+
+**Implementation**:
+```python
+class HashIndexDB:
+    def __init__(self, filename='data.db'):
+        self.filename = filename
+        self.index = {}  # key -> byte offset
+        self.file = open(filename, 'a+b')
+        self._build_index()
+
+    def _build_index(self):
+        """Build index by scanning entire file"""
+        self.file.seek(0)
+        offset = 0
+
+        while True:
+            line = self.file.readline()
+            if not line:
+                break
+
+            key = line.split(b',', 1)[0].decode()
+            self.index[key] = offset  # Latest offset for this key
+            offset = self.file.tell()
+
+    def set(self, key, value):
+        """Write to end of file and update index"""
+        data = f"{key},{value}\n".encode()
+        offset = self.file.tell()
+
+        self.file.write(data)
+        self.file.flush()
+
+        self.index[key] = offset  # Update index
+
+    def get(self, key):
+        """Use index to find data quickly"""
+        if key not in self.index:
+            return None
+
+        offset = self.index[key]
+        self.file.seek(offset)
+        line = self.file.readline().decode()
+
+        return line.split(',', 1)[1].strip()
+
+# Usage
+db = HashIndexDB()
+db.set('temperature:2024-01-15', '72')
+db.set('temperature:2024-01-16', '68')
+print(db.get('temperature:2024-01-15'))  # Fast lookup: O(1)
+```
+
+**Performance**:
+- **Writes**: O(1) - append to file, update hash map
+- **Reads**: O(1) - hash map lookup, one disk seek
+
+### Compaction
+
+Problem: The file grows forever, even for updates! Solution: **Compaction**.
+
+**Compaction process**: Keep only the latest value for each key and discard old values.
+
+### Segmentation
+
+Real implementations (like Bitcask) use **segments**:
+
+**Why segments?**
+1. **Freeze segments**: Once written, immutable (easier to manage)
+2. **Concurrent reads**: Read from old segments while writing new
+3. **Compaction**: Merge old segments in background
+4. **Crash recovery**: Simpler to recover from crashes
+
+**Hash index limitations**:
+- Hash table must fit in memory
+- Range queries are not efficient (must look up each key)
+
+## 3. SSTables and LSM-trees
+
+### Sorted String Table (SSTable)
+
+An **SSTable** is like a segment file, but with one key difference: **keys are sorted**.
+
+**Advantages of sorted keys**:
+
+1. **Sparse index**: Don't need to index every key
+2. **Range queries are efficient**: Keys are sorted, so scanning a range is sequential
+3. **Compression**: Group records into blocks and compress
+
+### How to create SSTables
+
+Since writes arrive in random order, how do we create sorted SSTables?
+
+**LSM-Tree write process**:
+
+```python
+class LSMTree:
+    def __init__(self):
+        self.memtable = {}  # In-memory sorted tree (simplified as dict)
+        self.sstables = []  # List of SSTable files on disk
+        self.memtable_size = 0
+        self.memtable_threshold = 1024 * 1024  # 1 MB
+
+    def write(self, key, value):
+        """Write to memtable"""
+        # 1. Write to memtable
+        self.memtable[key] = value
+        self.memtable_size += len(key) + len(value)
+
+        # 2. If memtable is full, flush to disk
+        if self.memtable_size > self.memtable_threshold:
+            self._flush_memtable()
+
+    def _flush_memtable(self):
+        """Write memtable to disk as SSTable"""
+        # 1. Sort keys
+        sorted_items = sorted(self.memtable.items())
+
+        # 2. Write to new SSTable file
+        sstable_file = f"sstable_{len(self.sstables)}.db"
+        with open(sstable_file, 'w') as f:
+            for key, value in sorted_items:
+                f.write(f"{key},{value}\n")
+
+        # 3. Add to list of SSTables
+        self.sstables.append(sstable_file)
+
+        # 4. Clear memtable
+        self.memtable = {}
+        self.memtable_size = 0
+
+    def read(self, key):
+        """Read from memtable and SSTables"""
+        # 1. Check memtable first (most recent data)
+        if key in self.memtable:
+            return self.memtable[key]
+
+        # 2. Check SSTables from newest to oldest
+        for sstable_file in reversed(self.sstables):
+            value = self._search_sstable(sstable_file, key)
+            if value is not None:
+                return value
+
+        return None
+
+    def _search_sstable(self, filename, key):
+        """Binary search in sorted SSTable"""
+        with open(filename, 'r') as f:
+            # Simplified: in reality, use sparse index + binary search
+            for line in f:
+                k, v = line.strip().split(',', 1)
+                if k == key:
+                    return v
+                if k > key:  # Passed it, not found
+                    return None
+        return None
+```
+
+<Tip>
+**Performance optimization: Bloom Filters** - To avoid reading SSTables that don't contain a key, use a Bloom filter. A Bloom filter is a space-efficient probabilistic data structure that can tell if an element is definitely not in a set, or might be in the set.
+</Tip>
+
+### Compaction strategies
+
+Over time, we accumulate many SSTables. Need to merge them:
+
+**Size-tiered compaction** (used by Cassandra):
+- Merge SSTables of similar size
+- Creates exponentially larger SSTables
+- Write amplification: each write might be rewritten multiple times
+
+**Leveled compaction** (used by LevelDB, RocksDB):
+- Each level is 10x larger than previous
+- Within each level, SSTables have non-overlapping key ranges
+- More predictable performance
+
+## 4. B-trees
+
+B-trees are the most widely used indexing structure (used by almost all relational databases and many non-relational ones).
+
+### B-tree properties
+
+- Data organized in fixed-size **pages** (usually 4 KB)
+- Each page contains many keys and references to child pages
+- Tree is **balanced**: All leaf pages at same depth
+- **Branching factor**: Typically hundreds of children per page
+
+### B-tree search
+
+```python
+class BTreeNode:
+    def __init__(self, is_leaf=False):
+        self.keys = []
+        self.children = []
+        self.is_leaf = is_leaf
+
+class BTree:
+    def __init__(self, t=3):  # t = minimum degree (min keys = t-1)
+        self.root = BTreeNode(is_leaf=True)
+        self.t = t
+
+    def search(self, key, node=None):
+        """Search for key in B-tree"""
+        if node is None:
+            node = self.root
+
+        # Find first key >= search key
+        i = 0
+        while i < len(node.keys) and key > node.keys[i]:
+            i += 1
+
+        # If found at this node
+        if i < len(node.keys) and key == node.keys[i]:
+            return True
+
+        # If leaf node, key not found
+        if node.is_leaf:
+            return False
+
+        # Recurse to appropriate child
+        return self.search(key, node.children[i])
+```
+
+### B-tree vs LSM-tree
+
+| Use Case | B-Tree | LSM-Tree |
+|----------|--------|----------|
+| **Write-heavy workload** | Slower | Much faster |
+| **Read-heavy workload** | Faster | Slower |
+| **Point lookups** | One page read | Multiple SSTables |
+| **Range scans** | Good | Excellent |
+| **Transaction support** | Easier | More complex |
+| **Storage efficiency** | Fragmentation | Better compression |
+
+<Accordion title="When to use each">
+**B-trees**: Choose for read-heavy workloads, point lookups, and when you need strong transaction support with easy implementation.
+
+**LSM-trees**: Choose for write-heavy workloads, when you need better compression, or when you can tolerate slightly slower reads in exchange for much faster writes.
+</Accordion>
+
+## 5. Other indexing structures
+
+### Secondary indexes
+
+Secondary indexes are non-unique and can have duplicates. They're crucial for querying on non-primary key columns.
+
+### Clustered vs non-clustered index
+
+**Clustered index**: Index contains actual row data, data stored in index order, only one per table
+
+**Non-clustered index**: Index contains pointer to row, data stored separately, multiple per table
+
+### Multi-column indexes
+
+The order of columns in a composite index matters! The index can only be used efficiently if the query filters on the leftmost columns first.
+
+### Full-text search indexes
+
+Use an **inverted index** where each word maps to the documents containing it.
+
+## 6. Transaction processing vs analytics
+
+There are two main patterns of data access:
+
+| Property | OLTP | OLAP |
+|----------|------|------|
+| **Read pattern** | Small number of records by key | Aggregate over large number of records |
+| **Write pattern** | Random-access, low-latency writes | Bulk import (ETL) or event stream |
+| **Used by** | End user, via web application | Internal analyst, for decision support |
+| **Data representation** | Latest state of data | History of events over time |
+| **Dataset size** | GB to TB | TB to PB |
+| **Bottleneck** | Disk seek time | Disk bandwidth |
+
+### Data warehousing
+
+**Why separate database for analytics?**
+1. OLTP databases optimized for transactions, not analytics
+2. Analytics queries are expensive, would slow down user-facing app
+3. Data warehouse can denormalize data for better query performance
+4. Can combine data from multiple sources
+
+### Star schema
+
+- **Fact table**: Center of star, records events (sales transactions)
+- **Dimension tables**: Surrounding points, describe attributes
+
+## 7. Column-oriented storage
+
+Traditional row-oriented storage stores entire rows together. **Column-oriented storage** stores each column separately.
+
+**Advantages**:
+- Only read columns needed for query
+- Better compression (similar data together)
+- Vectorized processing possible
+
+### Column compression
+
+Columns compress very well because similar data is stored together.
+
+**Example**:
+```python
+# Original column (100 million rows)
+city_column = ['SF'] * 30_000_000 + ['NY'] * 40_000_000 + ['LA'] * 30_000_000
+
+# Uncompressed: ~1.2 GB (assuming 12 bytes per string)
+
+# Run-length encoded:
+compressed = [
+    ('SF', 30_000_000),
+    ('NY', 40_000_000),
+    ('LA', 30_000_000)
+]
+# Compressed: ~36 bytes!
+# Compression ratio: 33,000,000:1
+```
+
+<Note>
+Column-oriented storage is a huge win for analytics workloads but not suitable for OLTP workloads that need to access entire rows.
+</Note>
+
+### Writing to column-oriented storage
+
+**Solution: LSM-tree approach**
+1. Writes go to in-memory store (row-oriented for flexibility)
+2. Periodically merge to disk in column-oriented format
+3. Queries check both in-memory and disk storage
+
+## 8. Aggregation: Data cubes and materialized views
+
+### Materialized views
+
+A **materialized view** caches query results on disk for fast access, but must be updated when data changes.
+
+### Data cubes
+
+A **data cube** is a special kind of materialized view: a grid of aggregates grouped by different dimensions.
+
+**Advantage**: Extremely fast queries (just lookup in cube)
+**Disadvantage**: Less flexible (can only query on pre-aggregated dimensions)
+
+## Summary
+
+**Key takeaways**:
+
+1. **Two main families of storage engines**:
+   - Log-structured (LSM-trees): Append-only, fast writes
+   - Update-in-place (B-trees): Sorted pages, established and widely used
+
+2. **OLTP vs OLAP**:
+   - OLTP: Short transactions, user-facing, row-oriented
+   - OLAP: Large aggregations, analytics, column-oriented
+
+3. **Column-oriented storage** is huge win for analytics:
+   - Only load required columns
+   - Better compression
+   - Vectorized processing
+
+4. **Indexes speed up reads but slow down writes**:
+   - Choose indexes based on query patterns
+   - Trade-off between read and write performance
+
+5. **Different workloads need different storage engines**:
+   - No one-size-fits-all solution
+   - Understanding trade-offs is crucial
